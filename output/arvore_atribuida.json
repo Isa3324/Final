@@ -1,0 +1,540 @@
+{
+    "categoria": "programa",
+    "tipo": "programa",
+    "inicio": "START",
+    "fim": "END",
+    "tabela_simbolos": {
+        "A": {
+            "identificador": "A",
+            "tipo": "real",
+            "linha_definicao": 6,
+            "linhas_atribuicao": [
+                6,
+                14
+            ],
+            "linha_ultima_atribuicao": 14,
+            "linhas_uso": [
+                13,
+                13,
+                14
+            ],
+            "linha_ultimo_uso": 14
+        },
+        "B": {
+            "identificador": "B",
+            "tipo": "real",
+            "linha_definicao": 7,
+            "linhas_atribuicao": [
+                7
+            ],
+            "linha_ultima_atribuicao": 7,
+            "linhas_uso": [
+                13,
+                14
+            ],
+            "linha_ultimo_uso": 14
+        },
+        "C": {
+            "identificador": "C",
+            "tipo": "real",
+            "linha_definicao": 8,
+            "linhas_atribuicao": [
+                8
+            ],
+            "linha_ultima_atribuicao": 8,
+            "linhas_uso": [
+                13
+            ],
+            "linha_ultimo_uso": 13
+        },
+        "D": {
+            "identificador": "D",
+            "tipo": "real",
+            "linha_definicao": 9,
+            "linhas_atribuicao": [
+                9
+            ],
+            "linha_ultima_atribuicao": 9,
+            "linhas_uso": [
+                13
+            ],
+            "linha_ultimo_uso": 13
+        },
+        "S": {
+            "identificador": "S",
+            "tipo": "real",
+            "linha_definicao": 10,
+            "linhas_atribuicao": [
+                10
+            ],
+            "linha_ultima_atribuicao": 10,
+            "linhas_uso": [],
+            "linha_ultimo_uso": null
+        }
+    },
+    "tipos_validados": {
+        "tipos_inferidos": [
+            {
+                "linha": 3,
+                "categoria": "operacao_aritmetica",
+                "operador": "/",
+                "tipo": "inteiro"
+            },
+            {
+                "linha": 4,
+                "categoria": "operacao_aritmetica",
+                "operador": "//",
+                "tipo": "inteiro"
+            },
+            {
+                "linha": 5,
+                "categoria": "operacao_aritmetica",
+                "operador": "%",
+                "tipo": "inteiro"
+            },
+            {
+                "linha": 6,
+                "categoria": "atribuicao_literal",
+                "variavel": "A",
+                "tipo": "real"
+            },
+            {
+                "linha": 7,
+                "categoria": "atribuicao_literal",
+                "variavel": "B",
+                "tipo": "real"
+            },
+            {
+                "linha": 8,
+                "categoria": "atribuicao_literal",
+                "variavel": "C",
+                "tipo": "real"
+            },
+            {
+                "linha": 9,
+                "categoria": "atribuicao_literal",
+                "variavel": "D",
+                "tipo": "real"
+            },
+            {
+                "linha": 10,
+                "categoria": "atribuicao_literal",
+                "variavel": "S",
+                "tipo": "real"
+            },
+            {
+                "linha": 11,
+                "categoria": "operacao_aritmetica",
+                "operador": "+",
+                "tipo": "real"
+            },
+            {
+                "linha": 12,
+                "categoria": "operacao_aritmetica",
+                "operador": "^",
+                "tipo": "real"
+            },
+            {
+                "linha": 13,
+                "categoria": "operacao_relacional",
+                "operador": "<=",
+                "tipo": "logico"
+            },
+            {
+                "linha": 13,
+                "categoria": "operacao_relacional",
+                "operador": "<=",
+                "tipo": "logico"
+            },
+            {
+                "linha": 13,
+                "categoria": "decisao",
+                "tipo_condicao": "logico",
+                "tipo": "real",
+                "pode_ser_null": true
+            },
+            {
+                "linha": 13,
+                "categoria": "decisao",
+                "tipo_condicao": "logico",
+                "tipo": "real",
+                "pode_ser_null": true
+            },
+            {
+                "linha": 14,
+                "categoria": "operacao_relacional",
+                "operador": "<",
+                "tipo": "logico"
+            },
+            {
+                "linha": 14,
+                "categoria": "atribuicao_literal",
+                "variavel": "A",
+                "tipo": "real"
+            },
+            {
+                "linha": 14,
+                "categoria": "repeticao",
+                "tipo_condicao": "logico",
+                "tipo": "real",
+                "pode_ser_null": true
+            },
+            {
+                "linha": 15,
+                "categoria": "res",
+                "indice": 0,
+                "tipo": "real",
+                "pode_ser_null": true
+            }
+        ],
+        "resultados_anteriores": [
+            {
+                "linha": 3,
+                "tipo": "inteiro",
+                "pode_ser_null": false
+            },
+            {
+                "linha": 4,
+                "tipo": "inteiro",
+                "pode_ser_null": false
+            },
+            {
+                "linha": 5,
+                "tipo": "inteiro",
+                "pode_ser_null": false
+            },
+            {
+                "linha": 6,
+                "tipo": "real",
+                "pode_ser_null": false
+            },
+            {
+                "linha": 7,
+                "tipo": "real",
+                "pode_ser_null": false
+            },
+            {
+                "linha": 8,
+                "tipo": "real",
+                "pode_ser_null": false
+            },
+            {
+                "linha": 9,
+                "tipo": "real",
+                "pode_ser_null": false
+            },
+            {
+                "linha": 10,
+                "tipo": "real",
+                "pode_ser_null": false
+            },
+            {
+                "linha": 11,
+                "tipo": "real",
+                "pode_ser_null": false
+            },
+            {
+                "linha": 12,
+                "tipo": "real",
+                "pode_ser_null": false
+            },
+            {
+                "linha": 13,
+                "tipo": "real",
+                "pode_ser_null": true
+            },
+            {
+                "linha": 14,
+                "tipo": "real",
+                "pode_ser_null": true
+            },
+            {
+                "linha": 15,
+                "tipo": "real",
+                "pode_ser_null": true
+            }
+        ],
+        "erros_semanticos": []
+    },
+    "comandos": [
+        {
+            "categoria": "operacao_aritmetica",
+            "operador": "/",
+            "esquerda": {
+                "categoria": "literal",
+                "valor": "7",
+                "tipo": "inteiro",
+                "linha": 3
+            },
+            "direita": {
+                "categoria": "literal",
+                "valor": "2",
+                "tipo": "inteiro",
+                "linha": 3
+            },
+            "tipo_resultado": "inteiro",
+            "linha": 3,
+            "indice_resultado": 1
+        },
+        {
+            "categoria": "operacao_aritmetica",
+            "operador": "//",
+            "esquerda": {
+                "categoria": "literal",
+                "valor": "7",
+                "tipo": "inteiro",
+                "linha": 4
+            },
+            "direita": {
+                "categoria": "literal",
+                "valor": "2",
+                "tipo": "inteiro",
+                "linha": 4
+            },
+            "tipo_resultado": "inteiro",
+            "linha": 4,
+            "indice_resultado": 2
+        },
+        {
+            "categoria": "operacao_aritmetica",
+            "operador": "%",
+            "esquerda": {
+                "categoria": "literal",
+                "valor": "7",
+                "tipo": "inteiro",
+                "linha": 5
+            },
+            "direita": {
+                "categoria": "literal",
+                "valor": "2",
+                "tipo": "inteiro",
+                "linha": 5
+            },
+            "tipo_resultado": "inteiro",
+            "linha": 5,
+            "indice_resultado": 3
+        },
+        {
+            "categoria": "atribuicao_literal",
+            "destino": "A",
+            "valor": {
+                "categoria": "literal",
+                "valor": "1",
+                "tipo": "inteiro",
+                "linha": 6
+            },
+            "tipo_resultado": "real",
+            "linha": 6,
+            "indice_resultado": 4
+        },
+        {
+            "categoria": "atribuicao_literal",
+            "destino": "B",
+            "valor": {
+                "categoria": "literal",
+                "valor": "2",
+                "tipo": "inteiro",
+                "linha": 7
+            },
+            "tipo_resultado": "real",
+            "linha": 7,
+            "indice_resultado": 5
+        },
+        {
+            "categoria": "atribuicao_literal",
+            "destino": "C",
+            "valor": {
+                "categoria": "literal",
+                "valor": "3",
+                "tipo": "inteiro",
+                "linha": 8
+            },
+            "tipo_resultado": "real",
+            "linha": 8,
+            "indice_resultado": 6
+        },
+        {
+            "categoria": "atribuicao_literal",
+            "destino": "D",
+            "valor": {
+                "categoria": "literal",
+                "valor": "4",
+                "tipo": "inteiro",
+                "linha": 9
+            },
+            "tipo_resultado": "real",
+            "linha": 9,
+            "indice_resultado": 7
+        },
+        {
+            "categoria": "atribuicao_literal",
+            "destino": "S",
+            "valor": {
+                "categoria": "literal",
+                "valor": "5",
+                "tipo": "inteiro",
+                "linha": 10
+            },
+            "tipo_resultado": "real",
+            "linha": 10,
+            "indice_resultado": 8
+        },
+        {
+            "categoria": "operacao_aritmetica",
+            "operador": "+",
+            "esquerda": {
+                "categoria": "literal",
+                "valor": "2.00",
+                "tipo": "real",
+                "linha": 11
+            },
+            "direita": {
+                "categoria": "literal",
+                "valor": "3",
+                "tipo": "inteiro",
+                "linha": 11
+            },
+            "tipo_resultado": "real",
+            "linha": 11,
+            "indice_resultado": 9
+        },
+        {
+            "categoria": "operacao_aritmetica",
+            "operador": "^",
+            "esquerda": {
+                "categoria": "literal",
+                "valor": "2.00",
+                "tipo": "real",
+                "linha": 12
+            },
+            "direita": {
+                "categoria": "literal",
+                "valor": "3.00",
+                "tipo": "real",
+                "linha": 12
+            },
+            "tipo_resultado": "real",
+            "linha": 12,
+            "indice_resultado": 10
+        },
+        {
+            "categoria": "decisao",
+            "condicao": {
+                "categoria": "operacao_relacional",
+                "operador": "<=",
+                "esquerda": {
+                    "categoria": "variavel",
+                    "nome": "A",
+                    "tipo": "real",
+                    "linha_definicao": 6,
+                    "linha": 13
+                },
+                "direita": {
+                    "categoria": "variavel",
+                    "nome": "C",
+                    "tipo": "real",
+                    "linha_definicao": 8,
+                    "linha": 13
+                },
+                "tipo_resultado": "logico",
+                "linha": 13
+            },
+            "acao": {
+                "categoria": "decisao",
+                "condicao": {
+                    "categoria": "operacao_relacional",
+                    "operador": "<=",
+                    "esquerda": {
+                        "categoria": "variavel",
+                        "nome": "A",
+                        "tipo": "real",
+                        "linha_definicao": 6,
+                        "linha": 13
+                    },
+                    "direita": {
+                        "categoria": "variavel",
+                        "nome": "B",
+                        "tipo": "real",
+                        "linha_definicao": 7,
+                        "linha": 13
+                    },
+                    "tipo_resultado": "logico",
+                    "linha": 13
+                },
+                "acao": {
+                    "categoria": "variavel",
+                    "nome": "D",
+                    "tipo": "real",
+                    "linha_definicao": 9,
+                    "linha": 13
+                },
+                "tipo_condicao": "logico",
+                "tipo_resultado": "real",
+                "pode_ser_null": true,
+                "acao_pode_ser_null": false,
+                "valor_sem_execucao": "NULL",
+                "linha": 13
+            },
+            "tipo_condicao": "logico",
+            "tipo_resultado": "real",
+            "pode_ser_null": true,
+            "acao_pode_ser_null": true,
+            "valor_sem_execucao": "NULL",
+            "linha": 13,
+            "indice_resultado": 11
+        },
+        {
+            "categoria": "repeticao",
+            "condicao": {
+                "categoria": "operacao_relacional",
+                "operador": "<",
+                "esquerda": {
+                    "categoria": "variavel",
+                    "nome": "A",
+                    "tipo": "real",
+                    "linha_definicao": 6,
+                    "linha": 14
+                },
+                "direita": {
+                    "categoria": "variavel",
+                    "nome": "B",
+                    "tipo": "real",
+                    "linha_definicao": 7,
+                    "linha": 14
+                },
+                "tipo_resultado": "logico",
+                "linha": 14
+            },
+            "acao": {
+                "categoria": "atribuicao_literal",
+                "destino": "A",
+                "valor": {
+                    "categoria": "literal",
+                    "valor": "2",
+                    "tipo": "inteiro",
+                    "linha": 14
+                },
+                "tipo_resultado": "real",
+                "linha": 14
+            },
+            "tipo_condicao": "logico",
+            "tipo_resultado": "real",
+            "pode_ser_null": true,
+            "acao_pode_ser_null": false,
+            "valor_sem_execucao": "NULL",
+            "resultado_quando_executa": "resultado_da_ultima_execucao",
+            "linha": 14,
+            "indice_resultado": 12
+        },
+        {
+            "categoria": "res",
+            "indice": 0,
+            "posicao_historico": 11,
+            "tipo_resultado": "real",
+            "pode_ser_null": true,
+            "linha_resultado_referenciado": 14,
+            "linha": 15,
+            "indice_resultado": 13
+        }
+    ]
+}

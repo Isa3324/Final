@@ -1,0 +1,147 @@
+{
+    "simbolo_inicial": "programa",
+    "epsilon": "ε",
+    "endmarker": "$",
+    "nao_terminais": [
+        "comando",
+        "cont_comando",
+        "cont_mem",
+        "cont_num",
+        "conteudo",
+        "fim_mem",
+        "lista_comandos",
+        "operador_final",
+        "programa"
+    ],
+    "terminais": [
+        "DPAR",
+        "END",
+        "ENQUANTO",
+        "EPAR",
+        "MEM",
+        "NUM",
+        "OP",
+        "OPREL",
+        "RES",
+        "SE",
+        "START"
+    ],
+    "tabela_ll1": {
+        "comando": {
+            "EPAR": [
+                "EPAR",
+                "conteudo",
+                "DPAR"
+            ]
+        },
+        "lista_comandos": {
+            "EPAR": [
+                "comando",
+                "lista_comandos"
+            ],
+            "END": [
+                "ε"
+            ]
+        },
+        "operador_final": {
+            "OP": [
+                "OP"
+            ],
+            "OPREL": [
+                "OPREL"
+            ],
+            "SE": [
+                "SE"
+            ],
+            "ENQUANTO": [
+                "ENQUANTO"
+            ]
+        },
+        "cont_mem": {
+            "MEM": [
+                "MEM",
+                "fim_mem"
+            ],
+            "NUM": [
+                "NUM",
+                "operador_final"
+            ],
+            "EPAR": [
+                "comando",
+                "operador_final"
+            ],
+            "DPAR": [
+                "ε"
+            ]
+        },
+        "fim_mem": {
+            "SE": [
+                "operador_final"
+            ],
+            "OPREL": [
+                "operador_final"
+            ],
+            "OP": [
+                "operador_final"
+            ],
+            "ENQUANTO": [
+                "operador_final"
+            ],
+            "DPAR": [
+                "ε"
+            ]
+        },
+        "conteudo": {
+            "MEM": [
+                "MEM",
+                "cont_mem"
+            ],
+            "NUM": [
+                "NUM",
+                "cont_num"
+            ],
+            "EPAR": [
+                "comando",
+                "cont_comando"
+            ]
+        },
+        "programa": {
+            "START": [
+                "START",
+                "lista_comandos",
+                "END"
+            ]
+        },
+        "cont_comando": {
+            "MEM": [
+                "MEM",
+                "fim_mem"
+            ],
+            "NUM": [
+                "NUM",
+                "operador_final"
+            ],
+            "EPAR": [
+                "comando",
+                "operador_final"
+            ]
+        },
+        "cont_num": {
+            "MEM": [
+                "MEM",
+                "fim_mem"
+            ],
+            "RES": [
+                "RES"
+            ],
+            "NUM": [
+                "NUM",
+                "operador_final"
+            ],
+            "EPAR": [
+                "comando",
+                "operador_final"
+            ]
+        }
+    }
+}

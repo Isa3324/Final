@@ -1,0 +1,12 @@
+(START)
+(1 A)
+(2 B)
+(3 C)
+(4 D)
+(5 E)
+(A B +)
+(2.00 3 +)
+(2 0 ^)
+(A)
+*{ comentario iniciado e nao finalizado
+(END)

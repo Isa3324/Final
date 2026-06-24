@@ -1,0 +1,16 @@
+(START)
+*{ comentario em linha inteira antes das declaracoes }*
+(7 2 /)
+(7 2 //)
+(7 2 %)
+(1 A)
+(2 B) *{ comentario ao final de um comando }*
+(3 C)
+(4 D)
+(5 S)
+(2.00 3 +)
+(2.00 3.00 ^)
+((A C <=) *{ comentario entre elementos }* ((A B <=) D se) se)
+((A B <) (2 A) enquanto)
+(0 RES)
+(END)

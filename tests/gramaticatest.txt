@@ -1,0 +1,142 @@
+RELATÓRIO DE TESTE DA GRAMÁTICA LL(1)
+==================================================
+
+1. GRAMÁTICA
+
+programa -> START lista_comandos END
+lista_comandos -> comando lista_comandos
+lista_comandos -> ε
+comando -> EPAR conteudo DPAR
+conteudo -> MEM cont_mem
+conteudo -> NUM cont_num
+conteudo -> comando cont_comando
+cont_mem -> MEM fim_mem
+cont_mem -> NUM operador_final
+cont_mem -> comando operador_final
+cont_mem -> ε
+cont_num -> MEM fim_mem
+cont_num -> RES
+cont_num -> NUM operador_final
+cont_num -> comando operador_final
+cont_comando -> MEM fim_mem
+cont_comando -> NUM operador_final
+cont_comando -> comando operador_final
+fim_mem -> operador_final
+fim_mem -> ε
+operador_final -> OP
+operador_final -> OPREL
+operador_final -> SE
+operador_final -> ENQUANTO
+
+==================================================
+
+2. NÃO-TERMINAIS
+
+- comando
+- cont_comando
+- cont_mem
+- cont_num
+- conteudo
+- fim_mem
+- lista_comandos
+- operador_final
+- programa
+
+==================================================
+
+3. TERMINAIS
+
+- DPAR
+- END
+- ENQUANTO
+- EPAR
+- MEM
+- NUM
+- OP
+- OPREL
+- RES
+- SE
+- START
+
+==================================================
+
+4. CONJUNTOS FIRST
+
+FIRST(comando) = { EPAR }
+FIRST(cont_comando) = { EPAR, MEM, NUM }
+FIRST(cont_mem) = { EPAR, MEM, NUM, ε }
+FIRST(cont_num) = { EPAR, MEM, NUM, RES }
+FIRST(conteudo) = { EPAR, MEM, NUM }
+FIRST(fim_mem) = { ENQUANTO, OP, OPREL, SE, ε }
+FIRST(lista_comandos) = { EPAR, ε }
+FIRST(operador_final) = { ENQUANTO, OP, OPREL, SE }
+FIRST(programa) = { START }
+
+==================================================
+
+5. CONJUNTOS FOLLOW
+
+FOLLOW(comando) = { END, ENQUANTO, EPAR, MEM, NUM, OP, OPREL, SE }
+FOLLOW(cont_comando) = { DPAR }
+FOLLOW(cont_mem) = { DPAR }
+FOLLOW(cont_num) = { DPAR }
+FOLLOW(conteudo) = { DPAR }
+FOLLOW(fim_mem) = { DPAR }
+FOLLOW(lista_comandos) = { END }
+FOLLOW(operador_final) = { DPAR }
+FOLLOW(programa) = { $ }
+
+==================================================
+
+6. TABELA LL(1)
+
+[comando]
+  com EPAR: comando -> EPAR conteudo DPAR
+
+[cont_comando]
+  com EPAR: cont_comando -> comando operador_final
+  com MEM: cont_comando -> MEM fim_mem
+  com NUM: cont_comando -> NUM operador_final
+
+[cont_mem]
+  com DPAR: cont_mem -> ε
+  com EPAR: cont_mem -> comando operador_final
+  com MEM: cont_mem -> MEM fim_mem
+  com NUM: cont_mem -> NUM operador_final
+
+[cont_num]
+  com EPAR: cont_num -> comando operador_final
+  com MEM: cont_num -> MEM fim_mem
+  com NUM: cont_num -> NUM operador_final
+  com RES: cont_num -> RES
+
+[conteudo]
+  com EPAR: conteudo -> comando cont_comando
+  com MEM: conteudo -> MEM cont_mem
+  com NUM: conteudo -> NUM cont_num
+
+[fim_mem]
+  com DPAR: fim_mem -> ε
+  com ENQUANTO: fim_mem -> operador_final
+  com OP: fim_mem -> operador_final
+  com OPREL: fim_mem -> operador_final
+  com SE: fim_mem -> operador_final
+
+[lista_comandos]
+  com END: lista_comandos -> ε
+  com EPAR: lista_comandos -> comando lista_comandos
+
+[operador_final]
+  com ENQUANTO: operador_final -> ENQUANTO
+  com OP: operador_final -> OP
+  com OPREL: operador_final -> OPREL
+  com SE: operador_final -> SE
+
+[programa]
+  com START: programa -> START lista_comandos END
+
+==================================================
+
+7. RESULTADO
+
+A gramática é LL(1). Não há conflitos na tabela.

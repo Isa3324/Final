@@ -1,0 +1,13 @@
+(START)
+(2 A)
+(1 B)
+(3 C)
+(4 D)
+*{ o se abaixo possui condicao falsa e retorna NULL }*
+((A B <) D se)
+(0 RES)
+*{ o enquanto abaixo nao executa e retorna NULL }*
+((A B <) (1 A) enquanto)
+(0 RES)
+(A)
+(END)

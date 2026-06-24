@@ -35,7 +35,7 @@
                                     "filhos": [],
                                     "token": [
                                         "PALA",
-                                        "S",
+                                        "1 Isa Stohler Bertolaccini",
                                         1,
                                         2
                                     ]
@@ -49,7 +49,7 @@
                                             "token": [
                                                 "MOR",
                                                 "morse",
-                                                5,
+                                                30,
                                                 2
                                             ]
                                         }
@@ -65,7 +65,7 @@
                             "token": [
                                 "DPAR",
                                 ")",
-                                10,
+                                35,
                                 2
                             ]
                         }

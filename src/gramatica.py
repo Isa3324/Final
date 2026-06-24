@@ -140,6 +140,7 @@ class LL1Analyzer:
         self.calculate_first()
         self.calculate_follow()
         self.build_ll1_table()
+        
 def definirRegrasGramatica():
     grammar = {
         "programa": [["START", "lista_comandos", "END"]],
@@ -155,7 +156,9 @@ def definirRegrasGramatica():
             ["MEM", "cont_mem"],
             ["NUM", "cont_num"],
             ["comando", "cont_comando"],
-            ["PALA", "cont_pala"]
+            ["PALA", "cont_pala"],
+            ["LED", "NUM", "acao_led"],
+            ["BLOCO", "lista_comandos_bloco"]
         ],
 
         "cont_mem": [
@@ -168,6 +171,7 @@ def definirRegrasGramatica():
         "cont_num": [
             ["MEM", "fim_mem"],
             ["RES"],
+            ["DELAY"],
             ["NUM", "operador_final"],
             ["comando", "operador_final"]
         ],
@@ -180,6 +184,16 @@ def definirRegrasGramatica():
 
         "cont_pala": [
             ["MOR"]
+        ],
+
+        "acao_led": [
+            ["LIGAR"],
+            ["DESLIGAR"]
+        ],
+
+        "lista_comandos_bloco": [
+            ["comando", "lista_comandos_bloco"],
+            [EPSILON]
         ],
 
         "fim_mem": [

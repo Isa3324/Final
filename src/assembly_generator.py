@@ -76,6 +76,7 @@ def inicializarEstado(arvore_atribuida):
         "memorias": sorted(arvore_atribuida.get("tabela_simbolos", {}).keys()),
         "quantidade_resultados": len(arvore_atribuida.get("comandos", [])),
         "morse_sequencias": [],
+        "sequencias_hardware": [],
         "tempos_morse": lerTemposMorse(),
     }
 
@@ -202,6 +203,69 @@ def gerarRuntimeMorse(tempos):
         "@ ==========================================\n"
         ".equ LEDR_BASE,  0xFF200000\n"
         ".equ TIMER_BASE, 0xFF202000\n\n"
+
+        "@ ==========================================\n"
+        "@ Runtime Hardware - sequencia led/delay\n"
+        "@ ==========================================\n"
+        "executar_seq_hardware:\n"
+        "    push {r4, r5, r6, lr}\n"
+        "    mov r5, r0              @ r5 aponta para a sequencia\n\n"
+
+        "seq_hw_loop:\n"
+        "    ldr r4, [r5], #4        @ codigo da acao\n"
+        "    ldr r6, [r5], #4        @ argumento da acao\n\n"
+
+        "    cmp r4, #0              @ 0 = fim da sequencia\n"
+        "    beq seq_hw_fim\n\n"
+
+        "    cmp r4, #1              @ 1 = ligar LED\n"
+        "    beq seq_hw_ligar\n\n"
+
+        "    cmp r4, #2              @ 2 = desligar LED\n"
+        "    beq seq_hw_desligar\n\n"
+
+        "    cmp r4, #3              @ 3 = delay em ciclos\n"
+        "    beq seq_hw_delay\n\n"
+
+        "    b seq_hw_loop           @ ignora codigo desconhecido\n\n"
+
+        "seq_hw_ligar:\n"
+        "    mov r0, r6\n"
+        "    bl hw_led_ligar\n"
+        "    b seq_hw_loop\n\n"
+
+        "seq_hw_desligar:\n"
+        "    mov r0, r6\n"
+        "    bl hw_led_desligar\n"
+        "    b seq_hw_loop\n\n"
+
+        "seq_hw_delay:\n"
+        "    mov r0, r6\n"
+        "    bl delay_cycles\n"
+        "    b seq_hw_loop\n\n"
+
+        "seq_hw_fim:\n"
+        "    pop {r4, r5, r6, pc}\n\n"
+
+        "hw_led_ligar:\n"
+        "    push {r1, r2, r3, lr}\n"
+        "    ldr r1, =estado_leds\n"
+        "    ldr r2, [r1]\n"
+        "    orr r2, r2, r0\n"
+        "    str r2, [r1]\n"
+        "    ldr r3, =LEDR_BASE\n"
+        "    str r2, [r3]\n"
+        "    pop {r1, r2, r3, pc}\n\n"
+
+        "hw_led_desligar:\n"
+        "    push {r1, r2, r3, lr}\n"
+        "    ldr r1, =estado_leds\n"
+        "    ldr r2, [r1]\n"
+        "    bic r2, r2, r0\n"
+        "    str r2, [r1]\n"
+        "    ldr r3, =LEDR_BASE\n"
+        "    str r2, [r3]\n"
+        "    pop {r1, r2, r3, pc}\n\n"
 
         "morse_executar_loop:\n"
         "    mov r4, r0              @ r4 guarda o inicio da sequencia\n\n"
@@ -366,6 +430,8 @@ def gerarRodape(estado):
         codigo += f"{label_valor}: .double 0.0\n"
         codigo += f"{label_null}: .word 1\n"
 
+    codigo += "estado_leds: .word 0\n"
+    
     codigo += "    .align 3\n"
     codigo += f"resultados:      .space {quantidade * 8}\n"
     codigo += f"resultados_null: .space {quantidade * 4}\n"
@@ -374,6 +440,14 @@ def gerarRodape(estado):
     for label, sequencia, texto in estado.get("morse_sequencias", []):
         valores = ", ".join(str(valor) for valor in sequencia)
         codigo += f"\n{label}: .byte {valores}\n"
+        codigo += "    .align 2\n"
+    
+    for label, sequencia in estado.get("sequencias_hardware", []):
+        codigo += f"\n{label}:\n"
+
+        for codigo_acao, argumento in sequencia:
+            codigo += f"    .word {codigo_acao}, {argumento}\n"
+
         codigo += "    .align 2\n"
     return codigo
 
@@ -873,6 +947,194 @@ def gerarMorse(no, estado, indice_atual):
 
     return codigo
 
+def gerarLed(no, estado, indice_atual):
+    """
+    Gera Assembly para:
+
+    (led N ligar)
+    (led N desligar)
+
+    N é uma máscara de bits.
+    Ex:
+    1 -> LED0
+    2 -> LED1
+    3 -> LED0 e LED1
+    4 -> LED2
+    """
+
+    mascara = int(no["mascara"])
+    acao = no["acao"]
+
+    codigo = f"    @ led mascara {mascara} {acao}\n"
+
+    # Carrega estado atual dos LEDs.
+    codigo += "    ldr r1, =estado_leds\n"
+    codigo += "    ldr r2, [r1]\n"
+
+    # Carrega a máscara.
+    codigo += f"    ldr r3, ={mascara}\n"
+
+    if acao == "ligar":
+        # estado_leds = estado_leds | mascara
+        codigo += "    orr r2, r2, r3\n"
+
+    elif acao == "desligar":
+        # estado_leds = estado_leds & ~mascara
+        codigo += "    bic r2, r2, r3\n"
+
+    else:
+        raise ErroGeracaoAssembly(
+            f"Ação de LED não implementada: {acao}"
+        )
+
+    # Salva o novo estado interno.
+    codigo += "    str r2, [r1]\n"
+
+    # Escreve o estado nos LEDs físicos.
+    codigo += "    ldr r4, =LEDR_BASE\n"
+    codigo += "    str r2, [r4]\n"
+
+    # Resultado neutro para manter padrão do compilador.
+    codigo += carregarConstante("const_zero")
+    codigo += "    mov r7, #0\n"
+
+    return codigo
+
+def gerarDelay(no, estado, indice_atual):
+    """
+    Gera Assembly para:
+
+    (N delay)
+
+    N representa milissegundos.
+    """
+
+    tempo_ms = int(no["tempo_ms"])
+    ciclos = msParaCiclos(tempo_ms)
+
+    codigo = f"    @ delay {tempo_ms} ms\n"
+
+    if ciclos > 0:
+        codigo += f"    ldr r0, ={ciclos}\n"
+        codigo += "    bl delay_cycles\n"
+
+    # Resultado neutro para manter padrão do compilador.
+    codigo += carregarConstante("const_zero")
+    codigo += "    mov r7, #0\n"
+
+    return codigo
+
+def blocoPodeSerOtimizado(no):
+    """
+    Um bloco pode ser otimizado quando possui apenas comandos:
+    - led
+    - delay
+
+    Se tiver atribuicao, operacao, se, enquanto, res etc.,
+    ele continua sendo gerado do jeito normal.
+    """
+
+    if no.get("categoria") != "bloco":
+        return False
+
+    comandos = no.get("comandos", [])
+
+    if len(comandos) == 0:
+        return False
+
+    for comando in comandos:
+        if comando.get("categoria") not in {"led", "delay"}:
+            return False
+
+    return True
+
+
+def gerarDadosSequenciaHardware(no):
+    """
+    Converte um bloco de led/delay em uma sequência compacta.
+
+    Códigos:
+    1 = ligar LED
+    2 = desligar LED
+    3 = delay em ciclos
+    0 = fim
+    """
+
+    sequencia = []
+
+    for comando in no["comandos"]:
+        categoria = comando.get("categoria")
+
+        if categoria == "led":
+            mascara = int(comando["mascara"])
+            acao = comando["acao"]
+
+            if acao == "ligar":
+                sequencia.append((1, mascara))
+
+            elif acao == "desligar":
+                sequencia.append((2, mascara))
+
+            else:
+                raise ErroGeracaoAssembly(
+                    f"Ação de LED não implementada: {acao}"
+                )
+
+        elif categoria == "delay":
+            tempo_ms = int(comando["tempo_ms"])
+            ciclos = msParaCiclos(tempo_ms)
+
+            sequencia.append((3, ciclos))
+
+    sequencia.append((0, 0))
+
+    return sequencia
+
+
+def gerarBlocoOtimizado(no, estado, indice_atual):
+    """
+    Gera um bloco led/delay usando tabela compacta em .data.
+    """
+
+    indice = len(estado["sequencias_hardware"])
+    label = f"seq_hw_{indice}"
+
+    sequencia = gerarDadosSequenciaHardware(no)
+
+    estado["sequencias_hardware"].append((label, sequencia))
+
+    codigo = "    @ bloco otimizado de hardware led/delay\n"
+    codigo += f"    ldr r0, ={label}\n"
+    codigo += "    bl executar_seq_hardware\n"
+
+    # Resultado neutro do bloco.
+    codigo += carregarConstante("const_zero")
+    codigo += "    mov r7, #0\n"
+
+    return codigo
+
+def gerarBloco(no, estado, indice_atual):
+    """
+    Gera Assembly para bloco.
+
+    Se o bloco possuir apenas comandos led/delay,
+    usa uma sequência compacta em .data.
+
+    Caso contrário, gera comando por comando normalmente.
+    """
+
+    if blocoPodeSerOtimizado(no):
+        return gerarBlocoOtimizado(no, estado, indice_atual)
+
+    codigo = "    @ inicio do bloco\n"
+
+    for i, comando in enumerate(no["comandos"], start=1):
+        codigo += f"    @ comando interno do bloco {i}\n"
+        codigo += gerarNo(comando, estado, indice_atual)
+
+    codigo += "    @ fim do bloco\n"
+
+    return codigo
 
 def gerarNo(no, estado, indice_atual):
     """
@@ -914,6 +1176,15 @@ def gerarNo(no, estado, indice_atual):
     
     if categoria == "morse":
         return gerarMorse(no, estado, indice_atual)
+    
+    if categoria == "led":
+        return gerarLed(no, estado, indice_atual)
+
+    if categoria == "delay":
+        return gerarDelay(no, estado, indice_atual)
+
+    if categoria == "bloco":
+        return gerarBloco(no, estado, indice_atual)
     
     raise ErroGeracaoAssembly(
         f"Categoria não implementada no Assembly: {categoria}"

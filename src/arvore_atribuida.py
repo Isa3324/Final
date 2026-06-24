@@ -1,5 +1,6 @@
 import json
 import os
+from decimal import Decimal, InvalidOperation
 
 from tabela_simbolos import (
     coletarComandosPrincipais,
@@ -44,6 +45,25 @@ def tipoLiteral(valor):
 
     return TIPO_INTEIRO
 
+def obterInteiroLiteral(valor):
+    """
+    Converte um NUM para inteiro.
+    Aceita:
+    1
+    1.0
+    500
+    Rejeita:
+    1.5
+    """
+    try:
+        numero = Decimal(str(valor))
+    except InvalidOperation:
+        return None
+
+    if numero != numero.to_integral_value():
+        return None
+
+    return int(numero)
 
 def tipoDaOperacao(operador, tipo_esquerda, tipo_direita):
     """
@@ -125,6 +145,44 @@ def converterComando(
     linha = linhaDoToken(tokens_comando[0], linha_padrao)
     elementos = separarElementos(tokens_comando)
 
+    # Caso: (bloco comando1 comando2 ...)
+    if len(elementos) >= 1 and elementoEhToken(elementos[0], "BLOCO"):
+        comandos_do_bloco = elementos[1:]
+
+        comandos_atribuidos = []
+
+        for comando in comandos_do_bloco:
+            if not elementoEhComandoAninhado(comando):
+                raise ValueError(
+                    f"Não foi possível gerar árvore atribuída na linha {linha}: "
+                    f"bloco só pode conter comandos entre parênteses."
+                )
+
+            comando_atribuido = converterComando(
+                comando,
+                tabelaSimbolos,
+                historico_resultados,
+                linha
+            )
+
+            comandos_atribuidos.append(comando_atribuido)
+
+        if len(comandos_atribuidos) == 0:
+            raise ValueError(
+                f"Não foi possível gerar árvore atribuída na linha {linha}: "
+                f"bloco não pode ser vazio."
+            )
+
+        ultimo = comandos_atribuidos[-1]
+
+        return {
+            "categoria": "bloco",
+            "comandos": comandos_atribuidos,
+            "tipo_resultado": ultimo.get("tipo_resultado", TIPO_COMANDO),
+            "pode_ser_null": ultimo.get("pode_ser_null", False),
+            "linha": linha
+        }
+    
     # Caso: (A)
     if len(elementos) == 1 and elementoEhToken(elementos[0], "MEM"):
         variavel = converterElemento(
@@ -218,6 +276,23 @@ def converterComando(
                 "linha": linha
             }
 
+        # Caso: (N delay)
+        if elementoEhToken(primeiro, "NUM") and elementoEhToken(segundo, "DELAY"):
+            tempo_ms = obterInteiroLiteral(primeiro[1])
+
+            if tempo_ms is None:
+                raise ValueError(
+                    f"Não foi possível gerar árvore atribuída na linha {linha}: "
+                    f"delay exige número inteiro."
+                )
+
+            return {
+                "categoria": "delay",
+                "tempo_ms": tempo_ms,
+                "tipo_resultado": TIPO_COMANDO,
+                "linha": linha
+            }
+        
         # Não deveria chegar aqui, pois tabela_simbolos já rejeita.
         # Casos: ((3 4 +) A), ((3 4 <=) A)
         if elementoEhComandoAninhado(primeiro) and elementoEhToken(segundo, "MEM"):
@@ -236,6 +311,36 @@ def converterComando(
         segundo = elementos[1]
         operador = elementos[2]
 
+        # Caso: (led N ligar) ou (led N desligar)
+        if (
+            elementoEhToken(primeiro, "LED")
+            and elementoEhToken(segundo, "NUM")
+            and (
+                elementoEhToken(operador, "LIGAR")
+                or elementoEhToken(operador, "DESLIGAR")
+            )
+        ):
+            mascara = obterInteiroLiteral(segundo[1])
+
+            if mascara is None:
+                raise ValueError(
+                    f"Não foi possível gerar árvore atribuída na linha {linha}: "
+                    f"máscara do led precisa ser inteira."
+                )
+
+            acao = "ligar"
+
+            if elementoEhToken(operador, "DESLIGAR"):
+                acao = "desligar"
+
+            return {
+                "categoria": "led",
+                "mascara": mascara,
+                "acao": acao,
+                "tipo_resultado": TIPO_COMANDO,
+                "linha": linha
+            }
+        
         esquerda = converterElemento(
             primeiro,
             tabelaSimbolos,

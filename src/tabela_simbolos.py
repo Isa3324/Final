@@ -194,6 +194,17 @@ def analisarUsosEmElemento(
     if elementoEhToken(elemento, "NUM"):
         return
 
+        # Tokens especiais que não usam variável MEM diretamente.
+    if (
+        elementoEhToken(elemento, "PALA")
+        or elementoEhToken(elemento, "LED")
+        or elementoEhToken(elemento, "LIGAR")
+        or elementoEhToken(elemento, "DESLIGAR")
+        or elementoEhToken(elemento, "DELAY")
+        or elementoEhToken(elemento, "BLOCO")
+    ):
+        return
+    
     # Uma variável isolada neste ponto está sendo usada.
     if elementoEhToken(elemento, "MEM"):
         registrarUso(tabela, erros, elemento, linha)
@@ -231,7 +242,24 @@ def analisarComandoInterno(
 
     Ela não verifica tipos de operadores.
     """
+    # Caso: (bloco comando1 comando2 ...)
+    # O bloco não cria variável por si só, mas seus comandos internos podem criar/usar MEM.
+    if len(elementos) >= 1 and elementoEhToken(elementos[0], "BLOCO"):
+        comandos_do_bloco = elementos[1:]
 
+        for comando in comandos_do_bloco:
+            if elementoEhComandoAninhado(comando):
+                elementos_internos = separarElementos(comando)
+
+                analisarComandoInterno(
+                    elementos_internos,
+                    tabela,
+                    erros,
+                    linha,
+                    contexto_controle
+                )
+
+        return
     # Caso: (A)
     # Uso isolado de variável.
     if len(elementos) == 1:
@@ -248,7 +276,7 @@ def analisarComandoInterno(
     if len(elementos) == 2:
         primeiro = elementos[0]
         segundo = elementos[1]
-
+        
         # Caso: (N RES)
         # RES não define nem usa variável MEM.
         if elementoEhToken(segundo, "RES"):
@@ -257,6 +285,11 @@ def analisarComandoInterno(
         # Caso: ([texto] morse)
         # Morse não define nem usa variável MEM.
         if elementoEhToken(primeiro, "PALA") and elementoEhToken(segundo, "MOR"):
+            return
+        
+        # Caso: (N delay)
+        # Delay não define nem usa variável MEM.
+        if elementoEhToken(primeiro, "NUM") and elementoEhToken(segundo, "DELAY"):
             return
         
         # Caso: (1 A) ou (1.0 A)
@@ -318,6 +351,18 @@ def analisarComandoInterno(
         segundo = elementos[1]
         operador = elementos[2]
 
+        # Caso: (led N ligar) ou (led N desligar)
+        # LED não define nem usa variável MEM.
+        if (
+            elementoEhToken(primeiro, "LED")
+            and elementoEhToken(segundo, "NUM")
+            and (
+                elementoEhToken(operador, "LIGAR")
+                or elementoEhToken(operador, "DESLIGAR")
+            )
+        ):
+            return
+        
         # Caso: (condicao acao se)
         if elementoEhToken(operador, "SE"):
             analisarUsosEmElemento(

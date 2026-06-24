@@ -15,6 +15,12 @@ token_Enquanto = "ENQUANTO"  # comando enquanto
 token_Mor = "MOR"         # comando morse
 token_Pala = "PALA"       # palavra/frase entre colchetes
 
+token_Led = "LED"
+token_Ligar = "LIGAR"
+token_Desligar = "DESLIGAR"
+token_Delay = "DELAY"
+token_Bloco = "BLOCO"
+
 def estadoStartEnd(linha, posicao):
     if linha.startswith("(START)", posicao):
         return posicao + len("(START)"), (token_Start, "(START)", posicao)
@@ -134,11 +140,11 @@ def estadoIdentificadorMaiusculo(linha, posicao):
 
 def estadoComandoMinusculo(linha, posicao):
     inicio = posicao
+    palavra = ""
 
-    while posicao < len(linha) and linha[posicao].isalpha() and linha[posicao].islower():
+    while posicao < len(linha) and linha[posicao].islower():
+        palavra += linha[posicao]
         posicao += 1
-
-    palavra = linha[inicio:posicao]
 
     if palavra == "se":
         return posicao, (token_Se, palavra, inicio)
@@ -149,8 +155,22 @@ def estadoComandoMinusculo(linha, posicao):
     if palavra == "morse":
         return posicao, (token_Mor, palavra, inicio)
 
-    return posicao, (token_Invalido, palavra, inicio)
+    if palavra == "led":
+        return posicao, (token_Led, palavra, inicio)
 
+    if palavra == "ligar":
+        return posicao, (token_Ligar, palavra, inicio)
+
+    if palavra == "desligar":
+        return posicao, (token_Desligar, palavra, inicio)
+
+    if palavra == "delay":
+        return posicao, (token_Delay, palavra, inicio)
+
+    if palavra == "bloco":
+        return posicao, (token_Bloco, palavra, inicio)
+
+    return posicao, (token_Invalido, palavra, inicio)
 
 def parserExpressao(linha, tokens=None):
     if tokens is None:

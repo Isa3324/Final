@@ -13,20 +13,20 @@
     },
     {
         "tipo": "PALA",
-        "valor": "S",
+        "valor": "1 Isa Stohler Bertolaccini",
         "posicao": 1,
         "linha": 2
     },
     {
         "tipo": "MOR",
         "valor": "morse",
-        "posicao": 5,
+        "posicao": 30,
         "linha": 2
     },
     {
         "tipo": "DPAR",
         "valor": ")",
-        "posicao": 10,
+        "posicao": 35,
         "linha": 2
     },
     {

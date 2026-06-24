@@ -40,6 +40,27 @@ def adicionarErro(erros, mensagem):
     if mensagem not in erros:
         erros.append(mensagem)
 
+def obterInteiroLiteral(valor):
+    """
+    Tenta converter um literal NUM para inteiro.
+    Aceita:
+    - 1
+    - 1.0
+    - 1.00
+    Rejeita:
+    - 1.5
+    - abc
+    """
+
+    try:
+        numero = Decimal(str(valor))
+    except InvalidOperation:
+        return None
+
+    if numero != numero.to_integral_value():
+        return None
+
+    return int(numero)
 
 def tipoLiteralNumerico(valor):
     """
@@ -95,6 +116,11 @@ def textoDoElemento(elemento):
         elementoEhToken(elemento, "NUM")
         or elementoEhToken(elemento, "MEM")
         or elementoEhToken(elemento, "PALA")
+        or elementoEhToken(elemento, "LED")
+        or elementoEhToken(elemento, "LIGAR")
+        or elementoEhToken(elemento, "DESLIGAR")
+        or elementoEhToken(elemento, "DELAY")
+        or elementoEhToken(elemento, "BLOCO")
     ):
         return elemento[1]
 
@@ -394,6 +420,55 @@ def inferirTipoComando(
     linha = linhaDoToken(tokens_comando[0], linha_padrao)
     elementos = separarElementos(tokens_comando)
 
+    # Caso: (bloco comando1 comando2 ...)
+    if len(elementos) >= 1 and elementoEhToken(elementos[0], "BLOCO"):
+        comandos_do_bloco = elementos[1:]
+
+        if len(comandos_do_bloco) == 0:
+            adicionarErro(
+                erros,
+                f"Erro semântico na linha {linha}: bloco não pode ser vazio."
+            )
+            return TIPO_ERRO
+
+        tipo_ultimo = TIPO_COMANDO
+        algum_pode_ser_null = False
+
+        for comando in comandos_do_bloco:
+            if not elementoEhComandoAninhado(comando):
+                adicionarErro(
+                    erros,
+                    f"Erro semântico na linha {linha}: "
+                    f"bloco só pode conter comandos entre parênteses."
+                )
+                return TIPO_ERRO
+
+            tipo_comando = inferirTipoComando(
+                comando,
+                tabela_simbolos,
+                resultados_anteriores,
+                anotacoes,
+                erros,
+                linha,
+                oprel_permitido=False,
+                res_permitido=False
+            )
+
+            if tipo_comando == TIPO_ERRO:
+                return TIPO_ERRO
+
+            tipo_ultimo = tipo_comando
+
+        anotacoes.append({
+            "linha": linha,
+            "categoria": "bloco",
+            "quantidade_comandos": len(comandos_do_bloco),
+            "tipo": tipo_ultimo,
+            "pode_ser_null": algum_pode_ser_null
+        })
+
+        return tipo_ultimo
+    
     # Caso: (A)
     if len(elementos) == 1:
         tipo = inferirTipoElemento(
@@ -476,6 +551,35 @@ def inferirTipoComando(
 
             return tipo
 
+        # Caso: (N delay)
+        if elementoEhToken(primeiro, "NUM") and elementoEhToken(segundo, "DELAY"):
+            tempo_ms = obterInteiroLiteral(primeiro[1])
+
+            if tempo_ms is None:
+                adicionarErro(
+                    erros,
+                    f"Erro semântico na linha {linha}: "
+                    f"delay exige um número inteiro em milissegundos."
+                )
+                return TIPO_ERRO
+
+            if tempo_ms < 0:
+                adicionarErro(
+                    erros,
+                    f"Erro semântico na linha {linha}: "
+                    f"delay não pode receber tempo negativo."
+                )
+                return TIPO_ERRO
+
+            anotacoes.append({
+                "linha": linha,
+                "categoria": "delay",
+                "tempo_ms": tempo_ms,
+                "tipo": TIPO_COMANDO
+            })
+
+            return TIPO_COMANDO
+
         # (A B): atribuição válida se A já tiver sido definida.
         if elementoEhToken(primeiro, "MEM") and elementoEhToken(segundo, "MEM"):
             tipo_origem = inferirTipoElemento(
@@ -511,6 +615,48 @@ def inferirTipoComando(
         segundo = elementos[1]
         operador = elementos[2]
 
+        # Caso: (led N ligar) ou (led N desligar)
+        if (
+            elementoEhToken(primeiro, "LED")
+            and elementoEhToken(segundo, "NUM")
+            and (
+                elementoEhToken(operador, "LIGAR")
+                or elementoEhToken(operador, "DESLIGAR")
+            )
+        ):
+            mascara = obterInteiroLiteral(segundo[1])
+
+            if mascara is None:
+                adicionarErro(
+                    erros,
+                    f"Erro semântico na linha {linha}: "
+                    f"o comando led exige uma máscara inteira."
+                )
+                return TIPO_ERRO
+
+            if mascara < 0 or mascara > 1023:
+                adicionarErro(
+                    erros,
+                    f"Erro semântico na linha {linha}: "
+                    f"a máscara do led deve estar entre 0 e 1023."
+                )
+                return TIPO_ERRO
+
+            acao = "ligar"
+
+            if elementoEhToken(operador, "DESLIGAR"):
+                acao = "desligar"
+
+            anotacoes.append({
+                "linha": linha,
+                "categoria": "led",
+                "mascara": mascara,
+                "acao": acao,
+                "tipo": TIPO_COMANDO
+            })
+
+            return TIPO_COMANDO
+        
         # -----------------------------------------
         # Comando SE
         # -----------------------------------------

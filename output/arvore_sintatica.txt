@@ -4,10 +4,10 @@ programa
     comando
       EPAR -> ('EPAR', '(', 0, 2)
       conteudo
-        PALA -> ('PALA', 'S', 1, 2)
+        PALA -> ('PALA', '1 Isa Stohler Bertolaccini', 1, 2)
         cont_pala
-          MOR -> ('MOR', 'morse', 5, 2)
-      DPAR -> ('DPAR', ')', 10, 2)
+          MOR -> ('MOR', 'morse', 30, 2)
+      DPAR -> ('DPAR', ')', 35, 2)
     lista_comandos
       ε
   END -> ('END', '(END)', 0, 3)

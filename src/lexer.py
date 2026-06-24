@@ -12,6 +12,8 @@ token_OP_REL = "OPREL"    # "==", "!=", ">", "<", ">=", "<="
 token_Se = "SE"           # comando se
 token_Enquanto = "ENQUANTO"  # comando enquanto
 
+token_Mor = "MOR"         # comando morse
+token_Pala = "PALA"       # palavra/frase entre colchetes
 
 def estadoStartEnd(linha, posicao):
     if linha.startswith("(START)", posicao):
@@ -87,6 +89,29 @@ def estadoParenteses(linha, posicao):
 
     return posicao + 1, (token_Invalido, linha[posicao], posicao)
 
+def estadoPalavraColchetes(linha, posicao):
+    inicio = posicao
+    posicao += 1  # pula o "["
+
+    conteudo = []
+
+    while posicao < len(linha) and linha[posicao] != "]":
+        conteudo.append(linha[posicao])
+        posicao += 1
+
+    # Se chegou ao fim da linha sem achar "]", é erro léxico.
+    if posicao >= len(linha):
+        return posicao, (token_Invalido, linha[inicio:posicao], inicio)
+
+    # Pula o "]"
+    posicao += 1
+
+    texto = "".join(conteudo)
+
+    if texto.strip() == "":
+        return posicao, (token_Invalido, linha[inicio:posicao], inicio)
+
+    return posicao, (token_Pala, texto, inicio)
 
 def estadoIdentificadorMaiusculo(linha, posicao):
     inicio = posicao
@@ -121,6 +146,9 @@ def estadoComandoMinusculo(linha, posicao):
     if palavra == "enquanto":
         return posicao, (token_Enquanto, palavra, inicio)
 
+    if palavra == "morse":
+        return posicao, (token_Mor, palavra, inicio)
+
     return posicao, (token_Invalido, palavra, inicio)
 
 
@@ -140,6 +168,11 @@ def parserExpressao(linha, tokens=None):
         resultado_start_end = estadoStartEnd(linha, posicao)
         if resultado_start_end is not None:
             posicao, token = resultado_start_end
+            tokens.append(token)
+            continue
+
+        if caractere == "[":
+            posicao, token = estadoPalavraColchetes(linha, posicao)
             tokens.append(token)
             continue
 

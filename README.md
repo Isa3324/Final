@@ -1238,9 +1238,466 @@ geração de Assembly;
 testes e documentação.
 ```
 
+# 16. Extensão: Comando Morse com Saída em LED
+
+Foi adicionada uma extensão à linguagem para permitir que uma palavra ou frase seja convertida para código Morse e exibida por meio dos LEDs no CPUlator ARMv7 DE1-SoC.
+
+O comando segue a mesma ideia pós-fixada da linguagem: primeiro vem o conteúdo, depois o comando.
+
+```txt
+([TEXTO] morse)
+```
+
+Exemplos:
+
+```txt
+(START)
+([SOS] morse)
+(END)
+```
+
+```txt
+(START)
+([João 123!] morse)
+(END)
+```
+
+Nesse comando, o texto deve ficar entre colchetes `[ ]`, e o comando `morse` deve ser escrito em letras minúsculas.
+
 ---
 
-# 16. Conclusão
+## Tokens adicionados
+
+Foram adicionados dois novos tokens ao analisador léxico:
+
+| Token  | Significado                      | Exemplo                |
+| ------ | -------------------------------- | ---------------------- |
+| `PALA` | Palavra ou frase entre colchetes | `[SOS]`, `[João 123!]` |
+| `MOR`  | Comando Morse                    | `morse`                |
+
+Exemplo de entrada:
+
+```txt
+([SOS] morse)
+```
+
+Sequência de tokens gerada:
+
+```txt
+EPAR PALA MOR DPAR
+```
+
+Caso o texto seja iniciado com `[` e não seja fechado com `]`, ocorre erro léxico.
+
+Exemplo inválido:
+
+```txt
+([SOS morse)
+```
+
+---
+
+## Alteração na gramática
+
+A gramática foi estendida para aceitar comandos Morse sem alterar a estrutura principal da linguagem.
+
+Foram adicionadas as produções:
+
+```ebnf
+conteudo  = PALA, cont_pala ;
+cont_pala = MOR ;
+```
+
+Com isso, o comando:
+
+```txt
+([SOS] morse)
+```
+
+é reconhecido como:
+
+```txt
+EPAR PALA MOR DPAR
+```
+
+A extensão mantém a linguagem em formato pós-fixado, pois o texto aparece antes do operador/comando `morse`.
+
+---
+
+## Arquivo `morse_utils.py`
+
+Foi criado o arquivo `morse_utils.py`, responsável por centralizar as funções relacionadas ao código Morse.
+
+Esse arquivo contém:
+
+```txt
+tabela de conversão Morse;
+normalização de texto;
+remoção de acentos;
+remoção de cedilha;
+validação de caracteres aceitos;
+conversão de texto para sequências de ponto e traço.
+```
+
+A normalização permite que entradas com acento sejam aceitas.
+
+Exemplos:
+
+```txt
+João  -> JOAO
+ação  -> ACAO
+Ç     -> C
+```
+
+Assim, o comando:
+
+```txt
+([João] morse)
+```
+
+é tratado internamente como:
+
+```txt
+JOAO
+```
+
+Espaços são preservados como espaços. Eles não são convertidos para `/`.
+
+---
+
+## Caracteres aceitos
+
+O comando Morse aceita:
+
+```txt
+letras de A até Z;
+números de 0 até 9;
+espaços;
+pontuações cadastradas na tabela Morse.
+```
+
+Foram incluídos símbolos como:
+
+```txt
+. , ? ' ! / ( ) & : ; = - _ " $ @
+```
+
+Caso algum caractere não possua conversão Morse cadastrada, ocorre erro semântico.
+
+Exemplo inválido:
+
+```txt
+(START)
+([TESTE#] morse)
+(END)
+```
+
+Nesse caso, o caractere `#` não possui conversão Morse cadastrada.
+
+---
+
+## Alterações na análise semântica
+
+O comando Morse não define variável e não utiliza variável `MEM`. Por isso, a tabela de símbolos apenas ignora comandos no formato:
+
+```txt
+(PALA MOR)
+```
+
+Exemplo:
+
+```txt
+([SOS] morse)
+```
+
+Esse comando não cria entrada na tabela de símbolos.
+
+Na verificação de tipos, o comando Morse é validado como um comando especial. O verificador confere se todos os caracteres do texto possuem conversão Morse cadastrada.
+
+Quando o comando é válido, ele é anotado com a categoria:
+
+```txt
+morse
+```
+
+---
+
+## Árvore sintática atribuída
+
+A árvore sintática atribuída recebeu uma nova categoria:
+
+```json
+{
+    "categoria": "morse",
+    "texto_original": "João 123!",
+    "texto_normalizado": "JOAO 123!",
+    "tipo_resultado": "comando"
+}
+```
+
+Essa estrutura é utilizada pelo gerador de Assembly para produzir as chamadas das rotinas de ponto, traço e espaçamento.
+
+---
+
+## Geração de Assembly
+
+O gerador de Assembly foi estendido para reconhecer nós da categoria:
+
+```txt
+morse
+```
+
+Para cada caractere do texto, o compilador consulta a tabela Morse e gera chamadas para as rotinas correspondentes.
+
+Exemplo:
+
+```txt
+([SOS] morse)
+```
+
+Conversão:
+
+```txt
+S = ...
+O = ---
+S = ...
+```
+
+Chamadas geradas de forma simplificada:
+
+```asm
+bl morse_ponto
+bl morse_gap_simbolo
+bl morse_ponto
+bl morse_gap_simbolo
+bl morse_ponto
+bl morse_gap_letra
+
+bl morse_traco
+bl morse_gap_simbolo
+bl morse_traco
+bl morse_gap_simbolo
+bl morse_traco
+bl morse_gap_letra
+
+bl morse_ponto
+bl morse_gap_simbolo
+bl morse_ponto
+bl morse_gap_simbolo
+bl morse_ponto
+```
+
+Ao final da palavra ou frase, o código entra em loop e repete a saída Morse continuamente.
+
+Por esse motivo, recomenda-se que o comando Morse seja o último comando antes do `(END)`.
+
+Exemplo recomendado:
+
+```txt
+(START)
+([Isa] morse)
+(END)
+```
+
+---
+
+## Device Map utilizado
+
+A saída Morse utiliza os LEDs vermelhos da placa DE1-SoC no CPUlator ARMv7.
+
+Endereço utilizado:
+
+```asm
+.equ LEDR_BASE, 0xFF200000
+```
+
+Esse endereço representa os LEDs vermelhos no Device Map da DE1-SoC.
+
+Para controlar o tempo das piscadas, foi utilizado o timer:
+
+```asm
+.equ TIMER_BASE, 0xFF202000
+```
+
+O timer foi usado para gerar intervalos aproximados em milissegundos.
+
+---
+
+## Tempos definidos para o código Morse
+
+Os tempos adotados foram:
+
+| Parte do Morse         |   Tempo |
+| ---------------------- | ------: |
+| Ponto                  |  300 ms |
+| Traço                  |  600 ms |
+| Espaço dentro da letra |  450 ms |
+| Espaço entre letras    |  900 ms |
+| Espaço entre palavras  | 2000 ms |
+
+A lógica usada foi:
+
+```txt
+ponto  = LED ligado por 300 ms
+traço  = LED ligado por 600 ms
+
+espaço dentro da letra = LED desligado por 450 ms
+espaço entre letras    = LED desligado por 900 ms
+espaço entre palavras  = LED desligado por 2000 ms
+```
+
+Exemplo para `SOS`:
+
+```txt
+S = ...
+O = ---
+S = ...
+```
+
+Execução esperada:
+
+```txt
+ponto, espaço interno, ponto, espaço interno, ponto
+espaço entre letras
+traço, espaço interno, traço, espaço interno, traço
+espaço entre letras
+ponto, espaço interno, ponto, espaço interno, ponto
+espaço entre palavras
+repete
+```
+
+---
+
+## Arquivos alterados
+
+| Arquivo                 | Alteração                                                   |
+| ----------------------- | ----------------------------------------------------------- |
+| `morse_utils.py`        | Novo arquivo com tabela Morse, normalização e validação.    |
+| `lexer.py`              | Adicionados os tokens `PALA` e `MOR`.                       |
+| `gramatica.py`          | Adicionada a produção `PALA MOR`.                           |
+| `tabela_simbolos.py`    | Comando Morse é ignorado pela tabela, pois não usa `MEM`.   |
+| `verificar_tipos.py`    | Valida caracteres aceitos no Morse.                         |
+| `arvore_atribuida.py`   | Cria nós da categoria `morse`.                              |
+| `assembly_generator.py` | Gera as chamadas Assembly para ponto, traço e espaçamentos. |
+| `README.md`             | Documenta a nova funcionalidade.                            |
+
+---
+
+## Testes sugeridos
+
+### Teste 1: letra com ponto
+
+```txt
+(START)
+([E] morse)
+(END)
+```
+
+Resultado esperado:
+
+```txt
+1 piscada curta em loop
+```
+
+### Teste 2: letra com traço
+
+```txt
+(START)
+([T] morse)
+(END)
+```
+
+Resultado esperado:
+
+```txt
+1 piscada longa em loop
+```
+
+### Teste 3: SOS
+
+```txt
+(START)
+([SOS] morse)
+(END)
+```
+
+Resultado esperado:
+
+```txt
+... --- ... em loop
+```
+
+### Teste 4: acentos
+
+```txt
+(START)
+([Isa] morse)
+(END)
+```
+
+Resultado esperado:
+
+```txt
+Isa em código Morse
+```
+
+### Teste 5: números e pontuação
+
+```txt
+(START)
+([A 1!] morse)
+(END)
+```
+
+Resultado esperado:
+
+```txt
+A, espaço, número 1 e exclamação em código Morse
+```
+
+### Teste 6: caractere inválido
+
+```txt
+(START)
+([TESTE#] morse)
+(END)
+```
+
+Resultado esperado:
+
+```txt
+Erro semântico informando que o caractere # não possui conversão Morse cadastrada.
+```
+
+---
+
+## Limitação importante
+
+Como o comando Morse entra em loop infinito para repetir a palavra ou frase, comandos escritos depois dele não serão executados.
+
+Exemplo não recomendado:
+
+```txt
+(START)
+([SOS] morse)
+(1 A)
+(END)
+```
+
+Nesse caso, o comando `(1 A)` não será executado, pois a execução ficará presa no loop do Morse.
+
+O uso recomendado é deixar o Morse como último comando do programa:
+
+```txt
+(START)
+([SOS] morse)
+(END)
+```
+
+
+---
+
+# 17. Conclusão
 
 O projeto implementa as etapas principais de um compilador para uma linguagem pós-fixada:
 

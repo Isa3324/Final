@@ -1,10 +1,59 @@
 # assembly_generator.py
 import os
-
+from morse_utils import (
+    TABELA_MORSE,
+    normalizar_texto_morse
+)
 
 class ErroGeracaoAssembly(Exception):
     pass
 
+def lerTemposMorse(caminho="morse_tempos.txt"):
+    """
+    Lê os tempos do Morse a partir de um arquivo .txt.
+
+    Se o arquivo não existir, usa valores padrão.
+    """
+
+    tempos = {
+        "ponto_ms": 300,
+        "traco_ms": 600,
+        "gap_simbolo_ms": 450,
+        "gap_letra_ms": 900,
+        "gap_palavra_ms": 2000,
+    }
+
+    if not os.path.exists(caminho):
+        return tempos
+
+    with open(caminho, "r", encoding="utf-8") as arquivo:
+        for linha in arquivo:
+            linha = linha.strip()
+
+            if not linha or linha.startswith("#"):
+                continue
+
+            if "=" not in linha:
+                continue
+
+            chave, valor = linha.split("=", 1)
+            chave = chave.strip()
+            valor = valor.strip()
+
+            if chave in tempos:
+                tempos[chave] = int(valor)
+
+    return tempos
+
+
+def msParaCiclos(ms):
+    """
+    CPUlator DE1-SoC usa timer de 100 MHz.
+
+    1 ms = 100.000 ciclos
+    """
+
+    return int(ms) * 100000
 
 def inicializarEstado(arvore_atribuida):
     """
@@ -26,6 +75,8 @@ def inicializarEstado(arvore_atribuida):
         "temporarios_laco": [],
         "memorias": sorted(arvore_atribuida.get("tabela_simbolos", {}).keys()),
         "quantidade_resultados": len(arvore_atribuida.get("comandos", [])),
+        "morse_sequencias": [],
+        "tempos_morse": lerTemposMorse(),
     }
 
 
@@ -125,6 +176,157 @@ def gerarCabecalho():
         "    ldr r12, =resultados_null  @ flag NULL: 0=valor, 1=NULL\n\n"
     )
 
+def gerarRuntimeMorse(tempos):
+    """
+    Funções auxiliares em Assembly para saída Morse no LED.
+
+    Device Map ARMv7 DE1-SoC:
+    - LEDR_BASE  = 0xFF200000
+    - TIMER_BASE = 0xFF202000
+
+    Timer:
+    - clock de 100 MHz
+    - 1 ms = 100.000 ciclos
+    """
+    
+    ciclos_ponto = msParaCiclos(tempos["ponto_ms"])
+    ciclos_traco = msParaCiclos(tempos["traco_ms"])
+    ciclos_gap_simbolo = msParaCiclos(tempos["gap_simbolo_ms"])
+    ciclos_gap_letra = msParaCiclos(tempos["gap_letra_ms"])
+    ciclos_gap_palavra = msParaCiclos(tempos["gap_palavra_ms"])
+
+    return (
+        "\n"
+        "@ ==========================================\n"
+        "@ Runtime Morse - LEDR e Timer DE1-SoC\n"
+        "@ ==========================================\n"
+        ".equ LEDR_BASE,  0xFF200000\n"
+        ".equ TIMER_BASE, 0xFF202000\n\n"
+
+        "morse_executar_loop:\n"
+        "    mov r4, r0              @ r4 guarda o inicio da sequencia\n\n"
+
+        "morse_reiniciar:\n"
+        "    mov r5, r4              @ r5 percorre a sequencia desde o inicio\n\n"
+
+        "morse_ler_proximo:\n"
+        "    ldrb r0, [r5], #1       @ le um byte e avanca o ponteiro\n\n"
+
+        "    cmp r0, #0              @ 0 = fim da sequencia\n"
+        "    beq morse_reiniciar\n\n"
+
+        "    cmp r0, #1              @ 1 = ponto\n"
+        "    beq morse_chama_ponto\n\n"
+
+        "    cmp r0, #2              @ 2 = traco\n"
+        "    beq morse_chama_traco\n\n"
+
+        "    cmp r0, #3              @ 3 = espaco dentro da letra\n"
+        "    beq morse_chama_gap_simbolo\n\n"
+
+        "    cmp r0, #4              @ 4 = espaco entre letras\n"
+        "    beq morse_chama_gap_letra\n\n"
+
+        "    cmp r0, #5              @ 5 = espaco entre palavras\n"
+        "    beq morse_chama_gap_palavra\n\n"
+
+        "    b morse_ler_proximo     @ ignora codigo desconhecido\n\n"
+
+        "morse_chama_ponto:\n"
+        "    bl morse_ponto\n"
+        "    b morse_ler_proximo\n\n"
+
+        "morse_chama_traco:\n"
+        "    bl morse_traco\n"
+        "    b morse_ler_proximo\n\n"
+
+        "morse_chama_gap_simbolo:\n"
+        "    bl morse_gap_simbolo\n"
+        "    b morse_ler_proximo\n\n"
+
+        "morse_chama_gap_letra:\n"
+        "    bl morse_gap_letra\n"
+        "    b morse_ler_proximo\n\n"
+
+        "morse_chama_gap_palavra:\n"
+        "    bl morse_gap_palavra\n"
+        "    b morse_ler_proximo\n\n"
+
+        "morse_ponto:\n"
+        "    push {r0, r1, r2, lr}\n"
+        "    ldr r1, =LEDR_BASE\n"
+        "    mov r2, #1\n"
+        "    str r2, [r1]\n"
+        f"    ldr r0, ={ciclos_ponto}      @ {tempos['ponto_ms']} ms\n"
+        "    bl delay_cycles\n"
+        "    mov r2, #0\n"
+        "    str r2, [r1]\n"
+        "    pop {r0, r1, r2, pc}\n\n"
+
+        "morse_traco:\n"
+        "    push {r0, r1, r2, lr}\n"
+        "    ldr r1, =LEDR_BASE\n"
+        "    mov r2, #1\n"
+        "    str r2, [r1]\n"
+        f"    ldr r0, ={ciclos_traco}      @ {tempos['traco_ms']} ms\n"
+        "    bl delay_cycles\n"
+        "    mov r2, #0\n"
+        "    str r2, [r1]\n"
+        "    pop {r0, r1, r2, pc}\n\n"
+
+        "morse_gap_simbolo:\n"
+        "    push {r0, lr}\n"
+        f"    ldr r0, ={ciclos_gap_simbolo}      @ {tempos['gap_simbolo_ms']} ms\n"
+        "    bl delay_cycles\n"
+        "    pop {r0, pc}\n\n"
+
+        "morse_gap_letra:\n"
+        "    push {r0, lr}\n"
+        f"    ldr r0, ={ciclos_gap_letra}      @ {tempos['gap_letra_ms']} ms\n"
+        "    bl delay_cycles\n"
+        "    pop {r0, pc}\n\n"
+
+        "morse_gap_palavra:\n"
+        "    push {r0, lr}\n"
+        f"    ldr r0, ={ciclos_gap_palavra}     @ {tempos['gap_palavra_ms']} ms\n"
+        "    bl delay_cycles\n"
+        "    pop {r0, pc}\n\n"
+
+        "delay_cycles:\n"
+        "    push {r1, r2, r3, lr}\n"
+        "    ldr r1, =TIMER_BASE\n\n"
+
+        "    @ para o timer antes de configurar\n"
+        "    mov r2, #8\n"
+        "    str r2, [r1, #4]\n\n"
+
+        "    @ limpa status de timeout\n"
+        "    mov r2, #0\n"
+        "    str r2, [r1, #0]\n\n"
+
+        "    @ periodo baixo: r0 & 0xFFFF\n"
+        "    uxth r2, r0\n"
+        "    str r2, [r1, #8]\n\n"
+
+        "    @ periodo alto: r0 >> 16\n"
+        "    lsr r3, r0, #16\n"
+        "    str r3, [r1, #12]\n\n"
+
+        "    @ inicia timer: START = bit 2\n"
+        "    mov r2, #4\n"
+        "    str r2, [r1, #4]\n\n"
+
+        "delay_cycles_loop:\n"
+        "    ldr r2, [r1, #0]\n"
+        "    tst r2, #1\n"
+        "    beq delay_cycles_loop\n\n"
+
+        "    @ limpa timeout\n"
+        "    mov r2, #0\n"
+        "    str r2, [r1, #0]\n\n"
+
+        "    pop {r1, r2, r3, pc}\n\n"
+    )
 
 def gerarRodape(estado):
     quantidade = max(1, estado["quantidade_resultados"])
@@ -146,6 +348,8 @@ def gerarRodape(estado):
     codigo += "    @ expoente deve ser inteiro nao negativo\n"
     codigo += "    b erro_expoente\n\n"
 
+    codigo += gerarRuntimeMorse(estado["tempos_morse"])
+    
     codigo += ".data\n"
     codigo += "    .align 3\n"
 
@@ -167,7 +371,10 @@ def gerarRodape(estado):
     codigo += f"resultados_null: .space {quantidade * 4}\n"
     codigo += "    .align 3\n"
     codigo += "pilha_expr:      .space 2048\n"
-
+    for label, sequencia, texto in estado.get("morse_sequencias", []):
+        valores = ", ".join(str(valor) for valor in sequencia)
+        codigo += f"\n{label}: .byte {valores}\n"
+        codigo += "    .align 2\n"
     return codigo
 
 
@@ -617,6 +824,56 @@ def gerarRes(no, estado, indice_atual):
 
     return codigo
 
+def gerarSequenciaMorse(texto):
+    texto = normalizar_texto_morse(texto)
+    sequencia_bytes = []
+
+    for i, caractere in enumerate(texto):
+        if caractere == " ":
+            sequencia_bytes.append(5)  # espaço entre palavras
+            continue
+
+        codigo_morse = TABELA_MORSE[caractere]
+
+        for j, simbolo in enumerate(codigo_morse):
+            if simbolo == ".":
+                sequencia_bytes.append(1)  # ponto
+            elif simbolo == "-":
+                sequencia_bytes.append(2)  # traço
+
+            if j < len(codigo_morse) - 1:
+                sequencia_bytes.append(3)  # espaço dentro da letra
+
+        proximo = texto[i + 1] if i + 1 < len(texto) else None
+
+        if proximo is not None and proximo != " ":
+            sequencia_bytes.append(4)  # espaço entre letras
+
+    sequencia_bytes.append(5)  # pausa antes de repetir
+    sequencia_bytes.append(0)  # fim da sequência
+
+    return sequencia_bytes
+
+def gerarMorse(no, estado, indice_atual):
+    texto = normalizar_texto_morse(no["texto_original"])
+
+    label_seq = f"morse_seq_{len(estado['morse_sequencias'])}"
+    sequencia = gerarSequenciaMorse(texto)
+
+    estado["morse_sequencias"].append((label_seq, sequencia, texto))
+
+    codigo = f"    @ comando morse otimizado: {texto}\n"
+    codigo += f"    ldr r0, ={label_seq}\n"
+    codigo += "    b morse_executar_loop\n"
+
+    # Inalcançável por causa do loop infinito.
+    codigo += "    @ resultado neutro inalcançavel por causa do loop morse\n"
+    codigo += carregarConstante("const_zero")
+    codigo += "    mov r7, #0\n"
+
+    return codigo
+
+
 def gerarNo(no, estado, indice_atual):
     """
     Encaminha cada tipo de nó da árvore atribuída para
@@ -654,7 +911,10 @@ def gerarNo(no, estado, indice_atual):
 
     if categoria == "res":
         return gerarRes(no, estado, indice_atual)
-
+    
+    if categoria == "morse":
+        return gerarMorse(no, estado, indice_atual)
+    
     raise ErroGeracaoAssembly(
         f"Categoria não implementada no Assembly: {categoria}"
     )

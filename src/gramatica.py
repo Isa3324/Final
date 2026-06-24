@@ -154,7 +154,8 @@ def definirRegrasGramatica():
         "conteudo": [
             ["MEM", "cont_mem"],
             ["NUM", "cont_num"],
-            ["comando", "cont_comando"]
+            ["comando", "cont_comando"],
+            ["PALA", "cont_pala"]
         ],
 
         "cont_mem": [
@@ -177,6 +178,10 @@ def definirRegrasGramatica():
             ["comando", "operador_final"]
         ],
 
+        "cont_pala": [
+            ["MOR"]
+        ],
+
         "fim_mem": [
             ["operador_final"],
             [EPSILON]
@@ -192,6 +197,7 @@ def definirRegrasGramatica():
 
     start_symbol = "programa"
     return grammar, start_symbol
+
 def construirGramatica():
     resultado = construirAnaliseLL1()
 

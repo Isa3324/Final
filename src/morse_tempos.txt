@@ -1,0 +1,5 @@
+ponto_ms=300
+traco_ms=600
+gap_simbolo_ms=450
+gap_letra_ms=900
+gap_palavra_ms=2000

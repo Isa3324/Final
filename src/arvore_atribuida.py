@@ -10,6 +10,7 @@ from tabela_simbolos import (
     elementoEhComandoAninhado
 )
 
+from morse_utils import normalizar_texto_morse
 
 TIPO_INTEIRO = "inteiro"
 TIPO_REAL = "real"
@@ -144,6 +145,19 @@ def converterComando(
     if len(elementos) == 2:
         primeiro = elementos[0]
         segundo = elementos[1]
+
+        # Caso: ([texto] morse)
+        if elementoEhToken(primeiro, "PALA") and elementoEhToken(segundo, "MOR"):
+            texto_original = primeiro[1]
+            texto_normalizado = normalizar_texto_morse(texto_original)
+
+            return {
+                "categoria": "morse",
+                "texto_original": texto_original,
+                "texto_normalizado": texto_normalizado,
+                "tipo_resultado": TIPO_COMANDO,
+                "linha": linha
+            }
 
         # Caso: (1 A) ou (1.0 A)
         if elementoEhToken(primeiro, "NUM") and elementoEhToken(segundo, "MEM"):

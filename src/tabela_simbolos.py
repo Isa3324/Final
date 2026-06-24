@@ -253,7 +253,12 @@ def analisarComandoInterno(
         # RES não define nem usa variável MEM.
         if elementoEhToken(segundo, "RES"):
             return
-
+        
+        # Caso: ([texto] morse)
+        # Morse não define nem usa variável MEM.
+        if elementoEhToken(primeiro, "PALA") and elementoEhToken(segundo, "MOR"):
+            return
+        
         # Caso: (1 A) ou (1.0 A)
         # Define A fora de controle ou reatribui A dentro de controle.
         if elementoEhToken(primeiro, "NUM") and elementoEhToken(segundo, "MEM"):

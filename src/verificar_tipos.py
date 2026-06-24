@@ -2,6 +2,11 @@ import json
 import os
 from decimal import Decimal, InvalidOperation
 
+from morse_utils import (
+    caracteres_invalidos_morse,
+    normalizar_texto_morse
+)
+
 from tabela_simbolos import (
     coletarComandosPrincipais,
     tokensDoNo,
@@ -86,7 +91,11 @@ def tipoOperacaoNumerica(tipo_esquerda, tipo_direita):
 
 
 def textoDoElemento(elemento):
-    if elementoEhToken(elemento, "NUM") or elementoEhToken(elemento, "MEM"):
+    if (
+        elementoEhToken(elemento, "NUM")
+        or elementoEhToken(elemento, "MEM")
+        or elementoEhToken(elemento, "PALA")
+    ):
         return elemento[1]
 
     if elementoEhComandoAninhado(elemento):
@@ -427,7 +436,33 @@ def inferirTipoComando(
                 anotacoes,
                 erros
             )
+            
+        # Caso: ([texto] morse)
+        if elementoEhToken(primeiro, "PALA") and elementoEhToken(segundo, "MOR"):
+            texto_original = primeiro[1]
+            texto_normalizado = normalizar_texto_morse(texto_original)
 
+            invalidos = caracteres_invalidos_morse(texto_original)
+
+            if invalidos:
+                adicionarErro(
+                    erros,
+                    f"Erro semântico na linha {linha}: "
+                    f"o comando morse recebeu caractere(s) sem conversão: "
+                    f"{', '.join(sorted(set(invalidos)))}."
+                )
+                return TIPO_ERRO
+
+            anotacoes.append({
+                "linha": linha,
+                "categoria": "morse",
+                "texto_original": texto_original,
+                "texto_normalizado": texto_normalizado,
+                "tipo": TIPO_COMANDO
+            })
+
+            return TIPO_COMANDO
+        
         # (1 A): definição válida; variável armazenada como real.
         if elementoEhToken(primeiro, "NUM") and elementoEhToken(segundo, "MEM"):
             tipo = TIPO_REAL
